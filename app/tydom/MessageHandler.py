@@ -3,6 +3,7 @@ import logging
 from http.client import HTTPResponse
 from http.server import BaseHTTPRequestHandler
 from io import BytesIO
+from typing import NamedTuple
 
 from sensors.Alarm import Alarm
 from sensors.Boiler import Boiler
@@ -190,60 +191,48 @@ deviceSwitchDetailsKeywords = ['thermicDefect']
 deviceMotionKeywords = ['motionDetect']
 deviceMotionDetailsKeywords = ['motionDetect']
 
-device_conso_classes = {
-    'energyInstantTotElec': 'current',
-    'energyInstantTotElec_Min': 'current',
-    'energyInstantTotElec_Max': 'current',
-    'energyScaleTotElec_Min': 'current',
-    'energyScaleTotElec_Max': 'current',
-    'energyInstantTotElecP': 'power',
-    'energyInstantTotElec_P_Min': 'power',
-    'energyInstantTotElec_P_Max': 'power',
-    'energyScaleTotElec_P_Min': 'power',
-    'energyScaleTotElec_P_Max': 'power',
-    'energyInstantTi1P': 'power',
-    'energyInstantTi1P_Min': 'power',
-    'energyInstantTi1P_Max': 'power',
-    'energyScaleTi1P_Min': 'power',
-    'energyScaleTi1P_Max': 'power',
-    'energyInstantTi1I': 'current',
-    'energyInstantTi1I_Min': 'current',
-    'energyInstantTi1I_Max': 'current',
-    'energyScaleTi1I_Min': 'current',
-    'energyScaleTi1I_Max': 'current',
-    'energyTotIndexWatt': 'energy',
-    'energyIndexHeatWatt': 'energy',
-    'energyIndexECSWatt': 'energy',
-    'energyIndexHeatGas': 'energy',
-    'outTemperature': 'temperature'}
 
-device_conso_unit_of_measurement = {
-    'energyInstantTotElec': 'A',
-    'energyInstantTotElec_Min': 'A',
-    'energyInstantTotElec_Max': 'A',
-    'energyScaleTotElec_Min': 'A',
-    'energyScaleTotElec_Max': 'A',
-    'energyInstantTotElecP': 'W',
-    'energyInstantTotElec_P_Min': 'W',
-    'energyInstantTotElec_P_Max': 'W',
-    'energyScaleTotElec_P_Min': 'W',
-    'energyScaleTotElec_P_Max': 'W',
-    'energyInstantTi1P': 'W',
-    'energyInstantTi1P_Min': 'W',
-    'energyInstantTi1P_Max': 'W',
-    'energyScaleTi1P_Min': 'W',
-    'energyScaleTi1P_Max': 'W',
-    'energyInstantTi1I': 'A',
-    'energyInstantTi1I_Min': 'A',
-    'energyInstantTi1I_Max': 'A',
-    'energyScaleTi1I_Min': 'A',
-    'energyScaleTi1I_Max': 'A',
-    'energyTotIndexWatt': 'Wh',
-    'energyIndexHeatWatt': 'Wh',
-    'energyIndexECSWatt': 'Wh',
-    'energyIndexHeatGas': 'Wh',
-    'outTemperature': 'C'}
-device_conso_keywords = device_conso_classes.keys()
+class SensorMetadata(NamedTuple):
+    device_class: str
+    unit_of_measurement: str
+    state_class: str
+
+
+CURRENT_SENSORS_MD = SensorMetadata(device_class="current", unit_of_measurement="A", state_class="measurement")
+POWER_SENSORS_MD = SensorMetadata(device_class="power", unit_of_measurement="W", state_class="measurement")
+ENERGY_SENSORS_MD = SensorMetadata(device_class="energy", unit_of_measurement="Wh", state_class="total")
+TEMP_SENSORS_MD = SensorMetadata(device_class="temperature", unit_of_measurement="C", state_class="measurement")
+
+
+device_conso_metadata = {
+    'energyInstantTotElec': CURRENT_SENSORS_MD,
+    'energyInstantTotElec_Min': CURRENT_SENSORS_MD,
+    'energyInstantTotElec_Max': CURRENT_SENSORS_MD,
+    'energyScaleTotElec_Min': CURRENT_SENSORS_MD,
+    'energyScaleTotElec_Max': CURRENT_SENSORS_MD,
+    'energyInstantTotElecP': POWER_SENSORS_MD,
+    'energyInstantTotElec_P_Min': POWER_SENSORS_MD,
+    'energyInstantTotElec_P_Max': POWER_SENSORS_MD,
+    'energyScaleTotElec_P_Min': POWER_SENSORS_MD,
+    'energyScaleTotElec_P_Max': POWER_SENSORS_MD,
+    'energyInstantTi1P': POWER_SENSORS_MD,
+    'energyInstantTi1P_Min': POWER_SENSORS_MD,
+    'energyInstantTi1P_Max': POWER_SENSORS_MD,
+    'energyScaleTi1P_Min': POWER_SENSORS_MD,
+    'energyScaleTi1P_Max': POWER_SENSORS_MD,
+    'energyInstantTi1I': CURRENT_SENSORS_MD,
+    'energyInstantTi1I_Min': CURRENT_SENSORS_MD,
+    'energyInstantTi1I_Max': CURRENT_SENSORS_MD,
+    'energyScaleTi1I_Min': CURRENT_SENSORS_MD,
+    'energyScaleTi1I_Max': CURRENT_SENSORS_MD,
+    'energyTotIndexWatt': ENERGY_SENSORS_MD,
+    'energyIndexHeatWatt': ENERGY_SENSORS_MD,
+    'energyIndexECSWatt': ENERGY_SENSORS_MD,
+    'energyIndexHeatGas': ENERGY_SENSORS_MD,
+    'outTemperature': TEMP_SENSORS_MD,
+}
+
+device_conso_keywords = tuple(device_conso_metadata.keys())
 
 deviceSmokeKeywords = ['techSmokeDefect']
 
@@ -594,7 +583,7 @@ class MessageHandler:
                             attr_gate[element_name] = element_value
 
                     if type_of_id == 'conso':
-                        if element_name in device_conso_keywords and element_validity == "upToDate":
+                        if element_name in device_conso_metadata and element_validity == "upToDate":
                             attr_conso = {
                                 'device_id': device_id,
                                 'endpoint_id': endpoint_id,
@@ -603,11 +592,7 @@ class MessageHandler:
                                 'device_type': 'sensor',
                                 element_name: element_value}
 
-                            if element_name in device_conso_classes:
-                                attr_conso['device_class'] = device_conso_classes[element_name]
-
-                            if element_name in device_conso_unit_of_measurement:
-                                attr_conso['unit_of_measurement'] = device_conso_unit_of_measurement[element_name]
+                            attr_conso.update(device_conso_metadata[element_name]._asdict())
 
                             new_conso = Sensor(
                                 elem_name=element_name,
