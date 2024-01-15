@@ -202,6 +202,7 @@ CURRENT_SENSORS_MD = SensorMetadata(device_class="current", unit_of_measurement=
 POWER_SENSORS_MD = SensorMetadata(device_class="power", unit_of_measurement="W", state_class="measurement")
 ENERGY_SENSORS_MD = SensorMetadata(device_class="energy", unit_of_measurement="Wh", state_class="total")
 TEMP_SENSORS_MD = SensorMetadata(device_class="temperature", unit_of_measurement="C", state_class="measurement")
+IRR_SENSORS_MD = SensorMetadata(device_class="irradiance", unit_of_measurement="W/m²", state_class="measurement")
 
 
 device_conso_metadata = {
@@ -230,6 +231,10 @@ device_conso_metadata = {
     'energyIndexECSWatt': ENERGY_SENSORS_MD,
     'energyIndexHeatGas': ENERGY_SENSORS_MD,
     'outTemperature': TEMP_SENSORS_MD,
+}
+
+device_sensor_metadata = {
+    'lightPower': IRR_SENSORS_MD,
 }
 
 device_conso_keywords = tuple(device_conso_metadata.keys())
@@ -396,6 +401,11 @@ class MessageHandler:
             if i["last_usage"] == 'sensorDFR':
                 device_name[device_unique_id] = i["name"]
                 device_type[device_unique_id] = 'smoke'
+                device_endpoint[device_unique_id] = i["id_endpoint"]
+
+            if i["last_usage"] == 'sensorSun':
+                device_name[device_unique_id] = i["name"]
+                device_type[device_unique_id] = 'sensor'
                 device_endpoint[device_unique_id] = i["id_endpoint"]
 
             if i["last_usage"] == '':
@@ -658,6 +668,24 @@ class MessageHandler:
                             #    attr_light['device_type'] = 'light'
                             # else:
                             #    attr_light['device_type'] = 'switch'
+
+                    if type_of_id == 'sensor':
+                        if element_name in device_sensor_metadata and element_validity == "upToDate":
+                            attr_conso = {
+                                'device_id': device_id,
+                                'endpoint_id': endpoint_id,
+                                'id': str(device_id) + '_' + str(endpoint_id),
+                                'name': print_id,
+                                'device_type': 'sensor',
+                                element_name: element_value}
+
+                            attr_conso.update(device_sensor_metadata[element_name]._asdict())
+
+                            new_conso = Sensor(
+                                elem_name=element_name,
+                                tydom_attributes_payload=attr_conso,
+                                mqtt=self.mqtt_client)
+                            await new_conso.update()
 
             except Exception as e:
                 logger.error('msg_data error in parsing !')
